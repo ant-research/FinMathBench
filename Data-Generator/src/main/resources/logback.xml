@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- From highest to lowest: OFF, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL -->
+<!-- Log output rules: When logging, if the level is higher than the root default level, it will be output -->
+<!-- Each configured filter filters out log entries in the output file, ensuring that only logs of the specific level are recorded -->
+
+<!-- Attribute descriptions: 
+scan: When set to true, the configuration file will be reloaded if changed, default is true
+scanPeriod: Sets the interval for monitoring configuration file changes. If no time unit is specified, the default unit is milliseconds. 
+            This attribute takes effect when scan is true. The default interval is 1 minute.
+debug: When set to true, prints logback internal log information for real-time monitoring of logback status. Default is false. -->
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <!-- Silent mode loading -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+    <!-- Define log file output location -->
+    <property name="logPath" value="./corpus-graph-log" />
+    <!-- Maximum log history: 30 days -->
+    <property name="maxHistory" value="30"/>
+
+    <!-- Configuration items: This node configures log output locations (console, file, database), output formats, etc. -->
+    <!-- ConsoleAppender represents output to console -->
+    <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- layout represents output format -->
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%date %level [%thread] %logger [%file:%line] %msg%n</pattern>
+        </layout>
+    </appender>
+
+    <appender name="consoleDefault" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <!-- layout represents output format -->
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%date %level [%thread] %logger [%file:%line] %msg%n</pattern>
+        </layout>
+    </appender>
+
+
+    <!-- Log output file -->
+    <appender name="fileInfoLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>%date %level [%thread] %logger [%file:%line] %msg%n</pattern>
+        </encoder>
+        <!-- Rolling file appender: First logs to specified file, when certain conditions are met, logs are written to other files -->
+        <!-- Rolling policy: Time-based rolling policy, responsible for both rolling and triggering -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Output path -->
+            <fileNamePattern>${logPath}/info/%d.log</fileNamePattern>
+            <!-- Optional node: Controls the maximum number of archived files to keep. When exceeded, old files are deleted. 
+                 If set to roll monthly and maxHistory is 6, only files from the last 6 months are kept, older files are deleted. 
+                 Note: Directories created for archiving will also be deleted -->
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+        <!-- Fixed window rolling policy: Generate new log files when file exceeds 20MB. Window size is 1-3, when 3 archived files are saved, 
+             the oldest log will be overwritten.
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+          <fileNamePattern>${logPath}/%d{yyyy-MM-dd}/.log.zip</fileNamePattern>
+          <minIndex>1</minIndex>
+          <maxIndex>3</maxIndex>
+        </rollingPolicy>   -->
+        <!-- Monitor current active file size, if exceeds specified size, will trigger rolling of current active file
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>5MB</maxFileSize>
+        </triggeringPolicy>   -->
+    </appender>
+    <!-- Special Error log recording -->
+    <appender name="fileErrorLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Only record ERROR level logs, add range filtering, can record this type of log to specific location -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>%date %level [%thread] %logger [%file:%line] %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logPath}/error/%d.log</fileNamePattern>
+            <!-- Maximum log history: 60 days -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+
+    <logger name="consoleLog" level="INFO">
+        <appender-ref ref="consoleLog"/>
+    </logger>
+
+    <!-- Root node: Indicates basic log level, can contain zero or more <appender-ref> elements, 
+         identifying which appenders will be added to this logger. -->
+    <!-- level="info" means basic log level is info. Used to set print level, case-insensitive: TRACE, DEBUG, INFO, WARN, ERROR, ALL and OFF, 
+         and a special value INHERITED or synonym NULL, representing enforcement of parent level. -->
+    <root level="ERROR">
+        <appender-ref ref="consoleDefault"/>
+        <!--        <appender-ref ref="fileInfoLog" />-->
+        <!--        <appender-ref ref="fileErrorLog" />-->
+    </root>
+</configuration>
